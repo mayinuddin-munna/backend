@@ -1,39 +1,38 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findByUsername(username);
-    if (user && await bcrypt.compare(pass, user.password)) {
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
-  }
-
-  async login(user: any) {
-    const payload = { username: user.username };
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
-  }
-
-  async register(data: { username: string; password: string; displayName: string }) {
-    const existing = await this.usersService.findByUsername(data.username);
-    if (existing) throw new UnauthorizedException('Username already taken');
-
-    const hashed = await bcrypt.hash(data.password, 10);
-    return this.usersService.createUser({
-      ...data,
-      password: hashed,
+  async register(dto: {
+    username: string;
+    password: string;
+    displayName: string;
+  }) {
+    const hashed = await bcrypt.hash(dto.password, 10);
+    return this.prisma.user.create({
+      data: {
+        username: dto.username,
+        password: hashed,
+        displayName: dto.displayName,
+      },
     });
+  }
+
+  async login(dto: { username: string; password: string }) {
+    const user = await this.prisma.user.findUnique({
+      where: { username: dto.username },
+    });
+    if (!user || !(await bcrypt.compare(dto.password, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Optionally return JWT here
+    return {
+      message: 'Login successful',
+      user: { username: user.username, displayName: user.displayName },
+    };
   }
 }

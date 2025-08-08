@@ -1,21 +1,17 @@
-import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() body: any) {
+  register(@Body() body: { username: string; password: string; displayName: string }) {
     return this.authService.register(body);
   }
 
   @Post('login')
-  async login(@Body() body: any) {
-    const user = await this.authService.validateUser(body.username, body.password);
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
-    return this.authService.login(user);
+  login(@Body() body: { username: string; password: string }) {
+    return this.authService.login(body);
   }
 }
