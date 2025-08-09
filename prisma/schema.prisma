@@ -1,12 +1,8 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -14,47 +10,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  username    String   @id
-  password    String
-  displayName String
+// prisma/schema.prisma
+
+model Article {
+  id          Int      @id @default(autoincrement())
+  title       String   @unique
+  description String?
+  body        String
+  published   Boolean  @default(false)
   createdAt   DateTime @default(now())
-
-  murmurs   Murmur[] @relation("UserMurmurs")
-  likes     Like[]   @relation("UserLikes")
-  followers Follow[] @relation("FollowedBy")
-  following Follow[] @relation("Following")
+  updatedAt   DateTime @updatedAt
+  author      User?    @relation(fields: [authorId], references: [id])
+  authorId    Int?
 }
 
-model Murmur {
-  id        String   @id @default(cuid())
-  text      String
-  createdAt DateTime @default(now())
-
-  user   User   @relation("UserMurmurs", fields: [userId], references: [username])
-  userId String
-
-  likes Like[] @relation("MurmurLikes")
-}
-
-model Follow {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-
-  follower   User   @relation("Following", fields: [followerId], references: [username])
-  followerId String
-
-  followed   User   @relation("FollowedBy", fields: [followedId], references: [username])
-  followedId String
-}
-
-model Like {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-
-  user   User   @relation("UserLikes", fields: [userId], references: [username])
-  userId String
-
-  murmur   Murmur @relation("MurmurLikes", fields: [murmurId], references: [id])
-  murmurId String
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String?
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[]
 }

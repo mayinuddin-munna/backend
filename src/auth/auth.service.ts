@@ -1,38 +1,38 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+//src/auth/auth.service.ts
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { PrismaService } from './../prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import { AuthEntity } from './entity/auth.entity';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private jwtService: JwtService) {}
 
-  async register(dto: {
-    username: string;
-    password: string;
-    displayName: string;
-  }) {
-    const hashed = await bcrypt.hash(dto.password, 10);
-    return this.prisma.user.create({
-      data: {
-        username: dto.username,
-        password: hashed,
-        displayName: dto.displayName,
-      },
-    });
-  }
+  async login(email: string, password: string): Promise<AuthEntity> {
+    // Step 1: Fetch a user with the given email
+    const user = await this.prisma.user.findUnique({ where: { email: email } });
 
-  async login(dto: { username: string; password: string }) {
-    const user = await this.prisma.user.findUnique({
-      where: { username: dto.username },
-    });
-    if (!user || !(await bcrypt.compare(dto.password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+    // If no user is found, throw an error
+    if (!user) {
+      throw new NotFoundException(`No user found for email: ${email}`);
     }
 
-    // Optionally return JWT here
+    // Step 2: Check if the password is correct
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    // If password does not match, throw an error
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+    // Step 3: Generate a JWT containing the user's ID and return it
     return {
-      message: 'Login successful',
-      user: { username: user.username, displayName: user.displayName },
+      accessToken: this.jwtService.sign({ userId: user.id }),
     };
   }
 }
