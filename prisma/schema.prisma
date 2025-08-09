@@ -12,24 +12,48 @@ datasource db {
 
 // prisma/schema.prisma
 
-model Article {
-  id          Int      @id @default(autoincrement())
-  title       String   @unique
-  description String?
-  body        String
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  author      User?    @relation(fields: [authorId], references: [id])
-  authorId    Int?
+model Murmur {
+  id        Int      @id @default(autoincrement())
+  text      String
+  createdAt DateTime @default(now())
+
+  user   User @relation("UserMurmurs", fields: [userId], references: [id])
+  userId Int
+
+  likes Like[] @relation("MurmurLikes")
+}
+
+model Follow {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  follower   User @relation("Following", fields: [followerId], references: [id])
+  followerId Int
+
+  followed   User @relation("FollowedBy", fields: [followedId], references: [id])
+  followedId Int
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  user   User @relation("UserLikes", fields: [userId], references: [id])
+  userId Int
+
+  murmur   Murmur @relation("MurmurLikes", fields: [murmurId], references: [id])
+  murmurId Int
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String?
-  email     String    @unique
+  email     String   @unique
   password  String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  articles  Article[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  murmurs   Murmur[] @relation("UserMurmurs")
+  likes     Like[]   @relation("UserLikes")
+  followers Follow[] @relation("FollowedBy")
+  following Follow[] @relation("Following")
 }
