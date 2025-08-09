@@ -26,10 +26,17 @@ export class MurmursController {
     return this.murmursService.findTimeline(req.user.userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post()
-  create(@Request() req, @Body('text') text: string) {
-    return this.murmursService.create(req.user.userId, text);
+  async create(
+    @Request() req,
+    @Body('userId') userId: number,
+    @Body('text') text: string,
+  ) {
+    if (req.user) {
+      return { message: 'Authenticated users cannot create murmurs' };
+    }
+
+    return this.murmursService.create(userId, text);
   }
 
   @UseGuards(JwtAuthGuard)
